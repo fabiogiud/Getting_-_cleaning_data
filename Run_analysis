@@ -1,0 +1,78 @@
+### Assign the path
+getwd()
+setwd("/Users/fabiogiudici/Documents/coursera/Getting_and_cleaning_data/data")
+setwd("../Documents/coursera/Getting_and_cleaning_data/data")
+
+### Read the data
+
+# read test data
+testsub <- read.table("subject_test.txt")
+testval <- read.table("X_test.txt")
+testact <- read.table("y_test.txt")
+
+# read training data
+trainingsub <- read.table("subject_train.txt")
+trainingval <- read.table("X_train.txt")
+trainingact <- read.table("y_train.txt")
+
+# read activity labels
+activities <- read.table("activity_labels.txt")
+colnames(activities) <- c("act_id", "act_lab")
+
+# read features
+features <- read.table("features.txt", as.is = TRUE)
+#colnames(features) <- c("feat_id", "feat_lab")
+
+
+### Point 1 - Merge the training and the test sets to create one data set
+
+# put together test and training 
+onedataset <- rbind(cbind(testsub, testval, testact), cbind(trainingsub, trainingval, trainingact))
+
+# assign column names
+colnames(onedataset) <- c("id", features[, 2], "activity")
+
+
+
+### Point 2 - Extract only the measurements on the mean and standard deviation for each measurement
+
+data2 <- grepl("id|activity|mean|std", colnames(onedataset))
+onedataset <- onedataset[, data2]
+
+
+
+### Point 3 - Use descriptive activity names to name the activities in the data set
+
+onedataset$activity <- factor(onedataset$activity, levels = activities[, 1], labels = activities[, 2])
+
+
+
+### Point 4 - Appropriately label the data set with descriptive variable names
+
+# take column names
+colnamdata <- colnames(onedataset)
+
+# remove particular characters
+colnamdata <- gsub("[\\(\\)-]", "", colnamdata)
+
+# clean names and make them more clear
+colnamdata <- gsub("^f", "frequency", colnamdata)
+colnamdata <- gsub("^t", "time", colnamdata)
+colnamdata <- gsub("Acc", "Accelerometer", colnamdata)
+colnamdata <- gsub("Gyro", "Gyroscope", colnamdata)
+colnamdata <- gsub("Mag", "Magnitude", colnamdata)
+colnamdata <- gsub("Jerk", "JerkSignals", colnamdata)
+
+# apply new labels 
+colnames(onedataset) <- colnamdata
+
+
+
+### Point 5 - From the data set in step 4, creates a second, independent tidy data set with the average of each variable for each activity and each subject.
+
+# install and load plyr package.
+# then take the mean for each variable for each activity and each subject
+tidy_data <- ddply(onedataset, c("id","activity"), numcolwise(mean))
+
+# export the fil as txt
+write.table(tidy_data, "tidy_dataset_giudicif.txt", row.names = FALSE)
